@@ -1,26 +1,36 @@
-# Mobile WebView Preview App
+# Mobile Mini Browser
 
-Tauri 기반의 모바일 웹뷰 컨트롤러로 WMS PDA 또는 모바일 웹 애플리케이션의 테스트 및 디버깅을 위한 도구입니다.
+Tauri 기반의 **반응형 웹 프리뷰용 모바일 미니 브라우저**입니다.
+반응형으로 개발된 웹 페이지를 여러 디바이스 크기로, 항상 위에 띄워두고, 여러 개를 나란히 비교하며 확인하는 개발/QA 도구입니다.
 이 도구는 순수하게 Claude Code를 사용해서 개발되었습니다.(저는 Rust도 모르고 Tauri도 몰라요..)
-
-<img width="1107" height="667" alt="스크린샷 2025-10-14 오후 2 58 45" src="https://github.com/user-attachments/assets/d6e909c0-7bf7-4656-9ed3-92cc608f4a99" />
 
 ## 주요 기능
 
-- **모바일 기기 시뮬레이션**: 375x667 뷰포트 (iPhone SE 크기)
-- **디바이스 모드 변경**: 디바이스 모드 변경을 통해 모바일 및 데스크탑 모드 전환
-- **커스터마이징 가능한 기본 URL**: 선호하는 테스트 URL 설정 및 저장
-- **바코드 스캐너**: 웹뷰에서 바코드 스캔 함수 입력 및 실행
-- **스캔 히스토리**: 최근 바코드 스캔 8개 추적 (세션 한정)
-- **개발자 도구**: F12로 DevTools 토글
-- **Always on Top**: 다른 애플리케이션 위에 프리뷰 윈도우 고정
-- **슬라이드 아웃 컨트롤 패널**: 설정 버튼(⚙️)을 통해 컨트롤 접근
+- **디바이스 프리셋**: iPhone SE / iPhone 12·13·14 Pro / iPhone 15 Pro Max / Galaxy S24·S26 Ultra / Pixel 8 / iPad Mini / Desktop
+- **커스텀 크기**: 이름·너비·높이를 직접 추가해 저장 (localStorage에 유지)
+- **팝업/새창 지원**: `window.open` · `target="_blank"`로 열리는 새 창을 같은 창에서 자연스럽게 이동 (예: 상품 클릭 시 상세로 이동)
+- **상시 하단 툴바**: 뒤로(←) / 앞으로(→) / 새로고침(⟳) / 주소 입력(🔗) / 항상 위(📌) / 새 창(➕) / 설정(⚙️)
+- **멀티 윈도우**: 여러 개를 띄워 한 화면에서 서로 다른 페이지를 나란히 비교
+- **Always on Top**: 다른 앱 위에 프리뷰 고정 (📌 토글)
+- **모바일/데스크탑 전환**: 선택한 디바이스 프리셋에 따라 User-Agent 자동 전환
+
+## 사용법
+
+- **주소 이동**: 툴바 🔗 → 입력창에 URL 입력 후 Enter (스킴 생략 시 `https://` 자동 보정)
+- **디바이스 변경**: ⚙️ 설정 패널 → `Device` 드롭다운에서 선택
+- **커스텀 프리셋 추가**: ⚙️ 패널 → `Name` / `W` / `H` 입력 → `＋ Add preset`
+- **시작 기본 URL**: ⚙️ 패널에서 `Set as Default URL` (다음 실행 시 자동 로드)
 
 ## 키보드 단축키
 
-- **F12**: DevTools 토글
-- **Ctrl/Cmd + K**: 컨트롤 패널 토글
-- **Escape**: 컨트롤 패널 닫기
+- **Cmd/Ctrl + K**: 설정 패널 토글
+- **Cmd/Ctrl + N**: 새 창
+- **Escape**: 설정 패널 닫기
+
+## 제약 사항
+
+- **Google / Apple 소셜 로그인 불가**: 두 provider가 임베디드 웹뷰에서의 OAuth를 정책상 차단합니다(2021~). Tauri뿐 아니라 Electron 등 모든 임베디드 웹뷰가 동일하게 막히며, 앱 내에서 우회할 방법이 없습니다. 해당 로그인이 꼭 필요하면 일반 브라우저를 사용하세요. (리다이렉트·쿠키 기반의 회사 SSO / 자체 로그인은 대부분 정상 동작)
+- **화면보다 큰 프리셋**: 세로 크기가 모니터 작업영역보다 크면 자동으로 잘립니다. 폭은 정확하게 유지되고 높이만 화면에 맞게 축소됩니다.
 
 ## 개발 환경 설정
 
@@ -28,13 +38,13 @@ Tauri 기반의 모바일 웹뷰 컨트롤러로 WMS PDA 또는 모바일 웹 �
 
 - [Rust](https://www.rust-lang.org/tools/install)
 
-### 설치 방법
+### 설치 & 실행
 
 ```bash
 # 1. Rust 설치
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-# 2. 터미널 재시작 또는 환경변수 로드
+# 2. 환경변수 로드 (또는 터미널 재시작)
 source $HOME/.cargo/env
 
 # 3. Tauri CLI 설치
@@ -47,48 +57,34 @@ cargo tauri dev
 cargo tauri build
 ```
 
-## 설정
-
-### 기본 URL
-
-- 컨트롤 패널 UI를 통해 설정
-- localStorage에 저장
-- 기본값: `https://alpha.wms.kakaostyle.com`
-
-### 바코드 입력
-
-- 컨트롤 패널을 통해 표시/숨김 토글
-- 웹뷰에서 `scanBarcode(value)` 실행
-- 자동으로 웹뷰 높이 조정
-
 ## 프로젝트 구조
 
 ```
 mobile-webview-app/
-├── src/               # 프론트엔드 리소스
-│   ├── index.html     # 메인 UI
-│   ├── main.js        # 애플리케이션 로직
+├── src/               # 프론트엔드 (vanilla JS)
+│   ├── index.html     # UI (상시 툴바 + 설정 패널)
+│   ├── main.js        # 앱 로직 (디바이스 프리셋 · 팝업 · 툴바)
 │   └── styles.css     # 스타일링
 └── src-tauri/         # Rust 백엔드
     ├── src/
-    │   └── lib.rs     # Tauri 명령어
+    │   └── lib.rs     # Tauri 커맨드 (창/웹뷰 제어, 팝업 인터셉트, 디바이스 fit)
     ├── icons/         # 애플리케이션 아이콘
     └── Cargo.toml     # Rust 의존성
 ```
 
 ## 기술 세부사항
 
-### 윈도우 설정
+### 레이아웃
 
-- **메인 윈도우**: 375x667 (패널 열림 시 725x667로 확장)
-- **자식 웹뷰**: 375x617 (바코드 숨김 시 375x667)
-- **컨트롤 패널**: 350px 너비 슬라이드 아웃
+- **창**: 디바이스 뷰포트 + 하단 툴바(44px). 설정 패널 열림 시 폭에 350px 추가.
+- **콘텐츠 웹뷰**: 좌상단(0,0)에 배치, 창 실제 inner 크기 기준으로 자동 맞춤(`fit_webview`).
+- **팝업 인터셉트**: 자식 웹뷰에 init-script를 주입해 `window.open`/`target=_blank`를 같은 창 이동으로 처리.
 
-### 저장소
+### 저장소 (localStorage)
 
-- **기본 URL**: localStorage (`defaultUrl`)
-- **바코드 표시 여부**: localStorage (`showBarcodeInput`)
-- **스캔 히스토리**: 세션 메모리 (종료 시 삭제)
+- `defaultUrl` — 시작 기본 URL
+- `devicePreset` — 마지막 선택 디바이스
+- `customPresets` — 사용자 추가 프리셋
 
 ## 권장 IDE 설정
 

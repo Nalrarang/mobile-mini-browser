@@ -2,37 +2,55 @@ const { invoke } = window.__TAURI__.core;
 
 // Constants
 const DEFAULT_URL_KEY = "defaultUrl";
-const DEFAULT_FALLBACK_URL = "https://alpha.wms.kakaostyle.com";
-const SHOW_BARCODE_KEY = "showBarcodeInput";
-const DEVICE_MODE_KEY = "deviceMode";
-const MAX_HISTORY_ITEMS = 8;
+const DEFAULT_FALLBACK_URL = "";
+const DEVICE_PRESET_KEY = "devicePreset";   // 마지막 선택 프리셋 이름
+const CUSTOM_PRESETS_KEY = "customPresets";  // 사용자 추가 프리셋 (JSON 배열)
+const TOOLBAR_H = 44;                        // lib.rs TOOLBAR_HEIGHT와 일치
+const PANEL_W = 350;                         // 설정 패널 너비 (styles.css .control-panel과 일치)
+
+// 내장 디바이스 프리셋 (viewport = 웹뷰 크기, 세로 기준)
+const BUILTIN_PRESETS = [
+  { name: "iPhone SE",           width: 375,  height: 667,  mobile: true },
+  { name: "iPhone 12/13/14 Pro", width: 390,  height: 844,  mobile: true },
+  { name: "iPhone 15 Pro Max",   width: 430,  height: 932,  mobile: true },
+  { name: "Galaxy S24 Ultra",    width: 384,  height: 832,  mobile: true },
+  { name: "Galaxy S26 Ultra",    width: 412,  height: 915,  mobile: true },
+  { name: "Pixel 8",             width: 412,  height: 915,  mobile: true },
+  { name: "iPad Mini",           width: 768,  height: 1024, mobile: true },
+  { name: "Desktop",             width: 1280, height: 800,  mobile: false },
+];
 
 // DOM Elements
 let urlInputEl;
-let devtoolsCheckboxEl;
-let alwaysOnTopCheckboxEl;
-let showBarcodeCheckboxEl;
+let aotBtn;
 let loadingScreen;
 let controlPanel;
-let barcodeInputEl;
-let barcodeContainer;
-let barcodeHistoryList;
 let defaultUrlDisplay;
-let mobileModeBtn;
-let desktopModeBtn;
-let modeInfoEl;
+let deviceSelectEl;
+let customNameEl;
+let customWidthEl;
+let customHeightEl;
+let toolbarEl;
+let toolbarUrlEl;
 
 // State
-let barcodeHistory = []; // Session-only storage
 let isMobileMode = true; // Default to mobile mode
+let isAlwaysOnTop = true; // 창은 always_on_top(true)로 생성됨
+let deviceW = 375;        // 현재 디바이스 viewport 너비
+let deviceH = 667;        // 현재 디바이스 viewport 높이
 
 // ============================================================================
 // URL Management
 // ============================================================================
 
 async function loadUrl() {
-  const url = urlInputEl.value.trim();
+  let url = urlInputEl.value.trim();
   if (!url) return;
+  // 스킴 없으면 https:// 자동 보정
+  if (!/^https?:\/\//i.test(url) && !url.startsWith("about:")) {
+    url = "https://" + url;
+    urlInputEl.value = url;
+  }
 
   try {
     await invoke("navigate_to_url", { url });
@@ -40,6 +58,29 @@ async function loadUrl() {
   } catch (error) {
     console.error("Navigation error:", error);
   }
+}
+
+// ============================================================================
+// Toolbar URL input (🔗)
+// ============================================================================
+
+function openToolbarUrl() {
+  toolbarEl.classList.add("url-open");
+  toolbarUrlEl.value = urlInputEl.value || "";
+  toolbarUrlEl.focus();
+  toolbarUrlEl.select();
+}
+
+function closeToolbarUrl() {
+  toolbarEl.classList.remove("url-open");
+}
+
+async function submitToolbarUrl() {
+  const url = toolbarUrlEl.value.trim();
+  closeToolbarUrl();
+  if (!url) return;
+  urlInputEl.value = url; // 패널 입력과 동기화 후 loadUrl이 스킴 보정+이동
+  await loadUrl();
 }
 
 function getDefaultUrl() {
@@ -52,7 +93,7 @@ function updateDefaultUrlDisplay() {
     defaultUrlDisplay.textContent = savedUrl;
     defaultUrlDisplay.style.color = "#0f0f0f";
   } else {
-    defaultUrlDisplay.textContent = `${DEFAULT_FALLBACK_URL} (fallback)`;
+    defaultUrlDisplay.textContent = "Not set";
     defaultUrlDisplay.style.color = "#999";
   }
 }
@@ -91,11 +132,32 @@ async function createNewWindow() {
 }
 
 async function toggleAlwaysOnTop() {
+  isAlwaysOnTop = !isAlwaysOnTop;
+  aotBtn.classList.toggle("active", isAlwaysOnTop);
   try {
-    await invoke("set_always_on_top", { alwaysOnTop: alwaysOnTopCheckboxEl.checked });
+    await invoke("set_always_on_top", { alwaysOnTop: isAlwaysOnTop });
   } catch (error) {
     console.error("Always on top error:", error);
   }
+}
+
+// ============================================================================
+// Navigation (toolbar)
+// ============================================================================
+
+async function navBack() {
+  try { await invoke("webview_back"); }
+  catch (error) { console.error("Back error:", error); }
+}
+
+async function navForward() {
+  try { await invoke("webview_forward"); }
+  catch (error) { console.error("Forward error:", error); }
+}
+
+async function navReload() {
+  try { await invoke("webview_reload"); }
+  catch (error) { console.error("Reload error:", error); }
 }
 
 function hideLoadingScreen() {
@@ -110,7 +172,7 @@ function hideLoadingScreen() {
 
 async function toggleMenu() {
   const isOpen = controlPanel.classList.contains("open");
-  const newWidth = isOpen ? 375 : 725;
+  const newWidth = isOpen ? deviceW : deviceW + PANEL_W;
 
   if (isOpen) {
     controlPanel.classList.remove("open");
@@ -119,156 +181,119 @@ async function toggleMenu() {
   }
 
   try {
-    await invoke("resize_window", { width: newWidth, height: 667 });
+    await invoke("resize_window", { width: newWidth, height: deviceH + TOOLBAR_H });
+    await fitWebview();
   } catch (error) {
     console.error("Failed to toggle menu:", error);
   }
 }
 
 async function closeMenu() {
+  if (!controlPanel.classList.contains("open")) return;
   controlPanel.classList.remove("open");
   try {
-    await invoke("resize_window", { width: 375, height: 667 });
+    await invoke("resize_window", { width: deviceW, height: deviceH + TOOLBAR_H });
+    await fitWebview();
   } catch (error) {
     console.error("Failed to close menu:", error);
   }
 }
 
 // ============================================================================
-// Device Mode Management
+// Device Presets
 // ============================================================================
 
-async function setDeviceMode(mobile) {
-  const currentUrl = urlInputEl.value.trim() || "about:blank";
-
+function getCustomPresets() {
   try {
-    // 웹뷰를 재생성하여 User-Agent 적용
-    await invoke("set_user_agent", {
-      isMobile: mobile,
-      currentUrl: currentUrl
-    });
-
-    isMobileMode = mobile;
-    localStorage.setItem(DEVICE_MODE_KEY, String(mobile));
-    updateModeUI();
-  } catch (error) {
-    console.error("Failed to set device mode:", error);
-    alert(`Failed to switch mode: ${error}`);
+    return JSON.parse(localStorage.getItem(CUSTOM_PRESETS_KEY)) || [];
+  } catch {
+    return [];
   }
 }
 
-function updateModeUI() {
-  if (isMobileMode) {
-    mobileModeBtn.classList.add("active");
-    desktopModeBtn.classList.remove("active");
-    modeInfoEl.textContent = "Current: Mobile (iPhone)";
-  } else {
-    mobileModeBtn.classList.remove("active");
-    desktopModeBtn.classList.add("active");
-    modeInfoEl.textContent = "Current: Desktop (macOS Chrome)";
-  }
+function allPresets() {
+  return [...BUILTIN_PRESETS, ...getCustomPresets()];
 }
 
-function loadDeviceMode() {
-  const savedMode = localStorage.getItem(DEVICE_MODE_KEY);
-  isMobileMode = savedMode === null ? true : savedMode === "true";
-  updateModeUI();
+function findPreset(name) {
+  return allPresets().find((p) => p.name === name);
 }
 
-// ============================================================================
-// Barcode Input Management
-// ============================================================================
+function populateDeviceSelect() {
+  deviceSelectEl.innerHTML = allPresets()
+    .map((p) => `<option value="${p.name}">${p.name} (${p.width}×${p.height})</option>`)
+    .join("");
+}
 
-async function toggleBarcodeInput() {
-  const isVisible = showBarcodeCheckboxEl.checked;
-  const webviewHeight = isVisible ? 617 : 667;
+// 반응형 fit: 현재 창 크기(main webview의 innerWidth/Height = 실측 논리 px)에 맞춰
+// 웹뷰를 (창폭 - 패널, 창높이 - 툴바)로 맞춘다. 클램핑/타이틀바/DPR/패널을 모두 흡수.
+async function fitWebview() {
+  const panelExtra = controlPanel.classList.contains("open") ? PANEL_W : 0;
 
-  localStorage.setItem(SHOW_BARCODE_KEY, String(isVisible));
-  barcodeContainer.style.display = isVisible ? "flex" : "none";
-
+  // 웹뷰 크기는 Rust의 실제 inner_size 기준으로 맞춘다 (JS innerHeight는 타이틀바만큼 부정확).
+  let w, h;
   try {
-    await invoke("resize_webview", { width: 375, height: webviewHeight });
+    [w, h] = await invoke("fit_webview", { panelW: panelExtra });
   } catch (error) {
-    console.error("Failed to resize webview:", error);
-  }
-}
-
-async function loadBarcodeVisibility() {
-  const savedState = localStorage.getItem(SHOW_BARCODE_KEY);
-  const isVisible = savedState === null ? true : savedState === "true";
-  const webviewHeight = isVisible ? 617 : 667;
-
-  showBarcodeCheckboxEl.checked = isVisible;
-  barcodeContainer.style.display = isVisible ? "flex" : "none";
-
-  try {
-    await invoke("resize_webview", { width: 375, height: webviewHeight });
-  } catch (error) {
-    console.error("Failed to resize webview on load:", error);
-  }
-}
-
-// ============================================================================
-// Barcode History
-// ============================================================================
-
-function addBarcodeToHistory(barcode) {
-  const now = new Date();
-  const timeString = now.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  });
-
-  barcodeHistory.unshift({ barcode, time: timeString, timestamp: now.getTime() });
-
-  if (barcodeHistory.length > MAX_HISTORY_ITEMS) {
-    barcodeHistory = barcodeHistory.slice(0, MAX_HISTORY_ITEMS);
-  }
-
-  updateHistoryDisplay();
-}
-
-function updateHistoryDisplay() {
-  if (barcodeHistory.length === 0) {
-    barcodeHistoryList.innerHTML = '<p class="empty-history">No scans yet</p>';
+    console.error("Failed to fit webview:", error);
     return;
   }
 
-  barcodeHistoryList.innerHTML = barcodeHistory.map((item, index) => `
-    <div class="history-item" data-index="${index}">
-      <span class="history-item-barcode">${item.barcode}</span>
-      <span class="history-item-time">${item.time}</span>
-    </div>
-  `).join('');
-
-  // 히스토리 아이템 클릭 이벤트 추가
-  const historyItems = barcodeHistoryList.querySelectorAll('.history-item');
-  historyItems.forEach(item => {
-    item.addEventListener('click', () => {
-      const index = parseInt(item.getAttribute('data-index'));
-      const historyItem = barcodeHistory[index];
-      if (historyItem) {
-        barcodeInputEl.value = historyItem.barcode;
-        barcodeInputEl.focus();
-      }
-    });
-  });
+  deviceW = w;
+  deviceH = h;
+  document.documentElement.style.setProperty("--device-w", w + "px");
 }
 
-async function scanBarcode() {
-  const barcode = barcodeInputEl.value.trim();
-  if (!barcode) return;
+async function applyDevice(preset) {
+  if (!preset) return;
 
   try {
-    await invoke("execute_js_in_webview", { jsCode: `scanBarcode('${barcode}')` });
-    addBarcodeToHistory(barcode);
-    barcodeInputEl.value = "";
-    barcodeInputEl.focus();
+    // UA(모바일/데스크탑)가 바뀌면 웹뷰 재생성
+    if (preset.mobile !== isMobileMode) {
+      await invoke("set_user_agent", {
+        isMobile: preset.mobile,
+        currentUrl: urlInputEl.value.trim() || "about:blank",
+      });
+      isMobileMode = preset.mobile;
+    }
+
+    // 창만 리사이즈 (패널 열림이면 폭에 패널 몫 추가). 웹뷰는 fitWebview가 맞춤.
+    const panelExtra = controlPanel.classList.contains("open") ? PANEL_W : 0;
+    await invoke("set_device", { winW: preset.width + panelExtra, viewH: preset.height });
+    await fitWebview();
+
+    localStorage.setItem(DEVICE_PRESET_KEY, preset.name);
+    if (deviceSelectEl.value !== preset.name) deviceSelectEl.value = preset.name;
   } catch (error) {
-    console.error("Barcode scan error:", error);
+    console.error("Failed to apply device:", error);
   }
+}
+
+function loadDevice() {
+  const preset = findPreset(localStorage.getItem(DEVICE_PRESET_KEY)) || BUILTIN_PRESETS[0];
+  deviceSelectEl.value = preset.name;
+  applyDevice(preset);
+}
+
+function addCustomPreset() {
+  const name = customNameEl.value.trim();
+  const width = parseInt(customWidthEl.value, 10);
+  const height = parseInt(customHeightEl.value, 10);
+  if (!name || !width || !height) {
+    alert("Name, Width, Height를 모두 입력하세요.");
+    return;
+  }
+
+  const customs = getCustomPresets().filter((p) => p.name !== name);
+  customs.push({ name, width, height, mobile: true });
+  localStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(customs));
+
+  customNameEl.value = "";
+  customWidthEl.value = "";
+  customHeightEl.value = "";
+  populateDeviceSelect();
+  deviceSelectEl.value = name;
+  applyDevice(findPreset(name));
 }
 
 // ============================================================================
@@ -278,38 +303,50 @@ async function scanBarcode() {
 window.addEventListener("DOMContentLoaded", () => {
   // Initialize DOM elements
   urlInputEl = document.querySelector("#url-input");
-  devtoolsCheckboxEl = document.querySelector("#devtools-checkbox");
-  alwaysOnTopCheckboxEl = document.querySelector("#always-on-top-checkbox");
-  showBarcodeCheckboxEl = document.querySelector("#show-barcode-checkbox");
+  aotBtn = document.querySelector("#aot-btn");
   loadingScreen = document.querySelector("#loading-screen");
   controlPanel = document.querySelector("#control-panel");
-  barcodeInputEl = document.querySelector("#barcode-input");
-  barcodeContainer = document.querySelector("#barcode-container");
-  barcodeHistoryList = document.querySelector("#barcode-history-list");
   defaultUrlDisplay = document.querySelector("#default-url-display");
-  mobileModeBtn = document.querySelector("#mobile-mode-btn");
-  desktopModeBtn = document.querySelector("#desktop-mode-btn");
-  modeInfoEl = document.querySelector("#mode-info");
+  deviceSelectEl = document.querySelector("#device-select");
+  customNameEl = document.querySelector("#custom-name");
+  customWidthEl = document.querySelector("#custom-width");
+  customHeightEl = document.querySelector("#custom-height");
+  toolbarEl = document.querySelector("#toolbar");
+  toolbarUrlEl = document.querySelector("#toolbar-url");
 
   // Load saved state
   urlInputEl.value = getDefaultUrl();
   updateDefaultUrlDisplay();
-  loadBarcodeVisibility();
-  loadDeviceMode();
+  populateDeviceSelect();
+  loadDevice();
 
-  // Menu controls
+  // Toolbar controls
+  document.querySelector("#nav-back").addEventListener("click", navBack);
+  document.querySelector("#nav-forward").addEventListener("click", navForward);
+  document.querySelector("#nav-reload").addEventListener("click", navReload);
+  aotBtn.addEventListener("click", toggleAlwaysOnTop);
   document.querySelector("#menu-toggle").addEventListener("click", toggleMenu);
   document.querySelector("#menu-close").addEventListener("click", closeMenu);
 
+  // 툴바 URL 입력 (🔗)
+  document.querySelector("#url-toggle").addEventListener("click", () => {
+    toolbarEl.classList.contains("url-open") ? closeToolbarUrl() : openToolbarUrl();
+  });
+  toolbarUrlEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); submitToolbarUrl(); }
+    else if (e.key === "Escape") { e.preventDefault(); closeToolbarUrl(); }
+  });
+
   // Settings controls
-  alwaysOnTopCheckboxEl.addEventListener("change", toggleAlwaysOnTop);
-  showBarcodeCheckboxEl.addEventListener("change", toggleBarcodeInput);
   document.querySelector("#set-default-url-btn").addEventListener("click", setDefaultUrl);
   document.querySelector("#clear-default-url-btn").addEventListener("click", clearDefaultUrl);
 
-  // Device mode controls
-  mobileModeBtn.addEventListener("click", () => setDeviceMode(true));
-  desktopModeBtn.addEventListener("click", () => setDeviceMode(false));
+  // Device preset controls
+  deviceSelectEl.addEventListener("change", () => applyDevice(findPreset(deviceSelectEl.value)));
+  document.querySelector("#add-preset-btn").addEventListener("click", addCustomPreset);
+
+  // 창 크기 변화(프리셋/패널/수동 드래그) 시 웹뷰를 항상 맞춤
+  window.addEventListener("resize", fitWebview);
 
   // Form submissions
   document.querySelector("#webview-form").addEventListener("submit", (e) => {
@@ -317,14 +354,8 @@ window.addEventListener("DOMContentLoaded", () => {
     loadUrl();
   });
 
-  document.querySelector("#barcode-form").addEventListener("submit", (e) => {
-    e.preventDefault();
-    scanBarcode();
-  });
-
   // Quick actions
   document.querySelector("#new-window-btn").addEventListener("click", createNewWindow);
-  document.querySelector("#reload-btn").addEventListener("click", loadUrl);
   document.querySelector("#default-url-btn").addEventListener("click", loadDefaultUrl);
 
   // Keyboard shortcuts

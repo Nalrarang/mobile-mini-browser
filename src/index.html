@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="stylesheet" href="styles.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mobile WebView Preview</title>
+    <title>Mobile Mini Browser</title>
     <script type="module" src="/main.js" defer></script>
   </head>
 
@@ -12,10 +12,23 @@
     <!-- 로딩 스크린 (초기에만 표시) -->
     <div id="loading-screen" class="loading-screen">
       <div class="loading-content">
-        <h1>Mobile WebView Preview</h1>
-        <p>Loading default URL...</p>
+        <h1>Mobile Mini Browser</h1>
+        <p>Responsive web preview</p>
         <div class="spinner"></div>
       </div>
+    </div>
+
+    <!-- 상단 툴바 (상시 노출) -->
+    <div class="toolbar" id="toolbar">
+      <button id="nav-back" class="tb-btn" title="뒤로">←</button>
+      <button id="nav-forward" class="tb-btn" title="앞으로">→</button>
+      <button id="nav-reload" class="tb-btn" title="새로고침">⟳</button>
+      <button id="url-toggle" class="tb-btn" title="주소 입력">🔗</button>
+      <input id="toolbar-url" class="toolbar-url" type="url" placeholder="https://..." autocomplete="off" />
+      <span class="tb-spacer"></span>
+      <button id="aot-btn" class="tb-btn active" title="항상 위">📌</button>
+      <button id="new-window-btn" class="tb-btn" title="새 창">➕</button>
+      <button id="menu-toggle" class="tb-btn" title="설정">⚙️</button>
     </div>
 
     <!-- 분할 뷰 컨테이너 -->
@@ -41,35 +54,20 @@
                   id="url-input"
                   type="url"
                   placeholder="https://example.com"
-                  value="https://alpha.wms.kakaostyle.com"
                   required
                 />
               </div>
 
-              <div class="checkbox-group">
-                <label>
-                  <input type="checkbox" id="always-on-top-checkbox" checked />
-                  Always on Top
-                </label>
+              <div class="device-section">
+                <h4>Device</h4>
+                <select id="device-select" class="device-select"></select>
+                <div class="custom-device">
+                  <input id="custom-name" type="text" placeholder="Name" />
+                  <input id="custom-width" type="number" placeholder="W" />
+                  <input id="custom-height" type="number" placeholder="H" />
+                </div>
+                <button type="button" id="add-preset-btn" class="secondary-btn">＋ Add preset</button>
               </div>
-
-              <div class="checkbox-group">
-                <label>
-                  <input type="checkbox" id="show-barcode-checkbox" checked />
-                  Show Barcode Input
-                </label>
-              </div>
-
-              <div class="mode-toggle-section">
-                <h4>Device Mode</h4>
-                <button type="button" id="mobile-mode-btn" class="mode-btn active">
-                  📱 
-                </button>
-                <button type="button" id="desktop-mode-btn" class="mode-btn">
-                  💻 
-                </button>
-              </div>
-              <p class="mode-info" id="mode-info">Current: Mobile (iPhone)</p>
               <div class="default-url-section">
                 <button type="button" id="set-default-url-btn" class="secondary-btn">
                   Set as Default URL
@@ -84,16 +82,7 @@
 
           <div class="quick-actions">
             <h3>Quick Actions</h3>
-            <button id="new-window-btn">New Window (Cmd+N)</button>
-            <button id="reload-btn">Reload Page</button>
             <button id="default-url-btn">Load Default URL</button>
-          </div>
-
-          <div class="barcode-history-section">
-            <h3>Barcode History</h3>
-            <div id="barcode-history-list" class="history-list">
-              <p class="empty-history">No scans yet</p>
-            </div>
           </div>
 
         </div>
@@ -103,20 +92,6 @@
       <div class="webview-container" id="webview-container">
         <!-- Tauri webview will be rendered here -->
       </div>
-    </div>
-
-    <!-- 바코드 입력 (하단 고정) -->
-    <div class="barcode-input-container" id="barcode-container">
-      <button id="menu-toggle" class="menu-toggle-btn">⚙️</button>
-      <form id="barcode-form" class="barcode-form">
-        <input
-          id="barcode-input"
-          type="text"
-          placeholder="Scan or enter barcode..."
-          autocomplete="off"
-        />
-        <button type="submit" id="barcode-submit">✓</button>
-      </form>
     </div>
   </body>
 </html>
