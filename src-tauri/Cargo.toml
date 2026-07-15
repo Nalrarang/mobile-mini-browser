@@ -1,6 +1,6 @@
 [package]
 name = "mobile-webview-preview"
-version = "0.1.1"
+version = "0.2.0"
 description = "모바일 웹뷰를 편하게 보기 위해 만든 툴입니다."
 authors = ["Nalrarang"]
 edition = "2021"
