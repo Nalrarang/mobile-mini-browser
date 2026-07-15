@@ -1,5 +1,5 @@
-use tauri::{WebviewUrl, WebviewWindowBuilder, LogicalPosition, LogicalSize};
-use tauri::webview::WebviewBuilder;
+use tauri::{WebviewUrl, WebviewWindowBuilder, LogicalPosition, LogicalSize, Emitter, Manager};
+use tauri::webview::{WebviewBuilder, PageLoadEvent};
 use url::Url;
 use std::sync::atomic::{AtomicU32, Ordering};
 
@@ -85,7 +85,6 @@ fn find_child_webview(window: &tauri::Window) -> Result<tauri::Webview, String> 
         .ok_or_else(|| "Child webview not found".to_string())
 }
 
-// 새 창 생성 커맨드
 #[tauri::command]
 fn create_new_window(app: tauri::AppHandle) -> Result<(), String> {
     let window_id = WINDOW_COUNTER.fetch_add(1, Ordering::SeqCst);
@@ -166,39 +165,53 @@ fn resize_window(window: tauri::Window, width: f64, height: f64) -> Result<(), S
 }
 
 // 디바이스 프리셋 적용 — 창만 리사이즈한다. 웹뷰 크기는 프론트의 반응형 fit(resize 이벤트)이 맞춘다.
-// win_w: 창 폭(패널 열림이면 viewport폭 + 패널폭). view_h: viewport 높이.
+// win_w: 창 폭(패널 열림이면 viewport폭 + 패널폭). view_h: viewport 높이. chrome_h: 하단 크롬(북마크 스트립+툴바) 실측 높이.
 // 화면 작업영역보다 큰 프리셋은 세로를 캡핑해 창이 잘리지 않게 한다.
 #[tauri::command]
-fn set_device(window: tauri::Window, win_w: f64, view_h: f64) -> Result<(), String> {
+fn set_device(window: tauri::Window, win_w: f64, view_h: f64, chrome_h: f64) -> Result<(), String> {
     let max_view_h = match window.current_monitor() {
         Ok(Some(m)) => {
             let work_h = m.work_area().size.height as f64 / m.scale_factor();
-            (work_h - TITLEBAR_APPROX - TOOLBAR_HEIGHT).max(200.0)
+            (work_h - TITLEBAR_APPROX - chrome_h).max(200.0)
         }
         _ => view_h,
     };
     let wv_h = view_h.min(max_view_h);
-    window.set_size(LogicalSize::new(win_w, wv_h + TOOLBAR_HEIGHT))
+    window.set_size(LogicalSize::new(win_w, wv_h + chrome_h))
         .map_err(|e| format!("Failed to resize window: {}", e))
 }
 
 // 웹뷰를 실제 창 inner 크기에 맞춘다 (JS window.innerHeight는 macOS 타이틀바 safe-area만큼
-// 실제보다 작게 보고되므로 반드시 Rust inner_size 기준으로 계산). 웹뷰 = (inner_w - panel_w) x (inner_h - 툴바).
+// 실제보다 작게 보고되므로 반드시 Rust inner_size 기준으로 계산). 웹뷰 = (inner_w - panel_w) x (inner_h - chrome_h).
+// chrome_h는 프론트가 크롬 컨테이너를 실측해 넘긴다(북마크 스트립 추가로 44px 고정이 아님).
 // 반환: 적용한 (webview 폭, webview 높이) 논리 px.
 #[tauri::command]
-fn fit_webview(window: tauri::Window, panel_w: f64) -> Result<(f64, f64), String> {
+fn fit_webview(window: tauri::Window, panel_w: f64, chrome_h: f64) -> Result<(f64, f64), String> {
     let scale = window.scale_factor().map_err(|e| e.to_string())?;
     let inner = window.inner_size().map_err(|e| e.to_string())?;
     let inner_w = inner.width as f64 / scale;
     let inner_h = inner.height as f64 / scale;
     let w = (inner_w - panel_w).max(0.0);
-    let h = (inner_h - TOOLBAR_HEIGHT).max(0.0);
+    let h = (inner_h - chrome_h).max(0.0);
 
     let webview = find_child_webview(&window)?;
     let _ = webview.set_position(LogicalPosition::new(0.0, 0.0));
     webview.set_size(LogicalSize::new(w, h))
         .map_err(|e| format!("Failed to resize webview: {}", e))?;
     Ok((w, h))
+}
+
+// 즐겨찾기 추가 모달용: child webview를 숨겨 뒤의 메인 웹뷰가 모달을 풀 렌더하게 한다.
+#[tauri::command]
+fn hide_webview(window: tauri::Window) -> Result<(), String> {
+    find_child_webview(&window)?.hide()
+        .map_err(|e| format!("Failed to hide webview: {}", e))
+}
+
+#[tauri::command]
+fn show_webview(window: tauri::Window) -> Result<(), String> {
+    find_child_webview(&window)?.show()
+        .map_err(|e| format!("Failed to show webview: {}", e))
 }
 
 #[tauri::command]
@@ -264,16 +277,24 @@ pub fn run() {
             resize_window,
             set_device,
             fit_webview,
+            hide_webview,
+            show_webview,
             set_always_on_top,
             set_user_agent
         ])
+        // 콘텐츠 웹뷰(webview-*)의 로드 시작/완료를 메인 UI 웹뷰로 전달 → 프론트가 워치독으로 로드 실패 감지.
+        .on_page_load(|webview, payload| {
+            let label = webview.label().to_string();
+            if !label.starts_with("webview-") { return; } // 메인 UI 웹뷰 제외
+            let status = if matches!(payload.event(), PageLoadEvent::Started) { "started" } else { "finished" };
+            let _ = webview.app_handle().emit("content-load", format!("{}|{}", status, payload.url()));
+        })
         .setup(|app| {
             // 고유한 창 ID 생성 (여러 인스턴스 허용)
             let window_id = WINDOW_COUNTER.fetch_add(1, Ordering::SeqCst);
             let window_label = format!("main-{}", window_id);
             let webview_label = format!("webview-{}", window_id);
 
-            // 메인 창 생성: 375x667 (웹뷰 617px + 바코드 입력 50px)
             let main_window = WebviewWindowBuilder::new(
                 app,
                 &window_label,

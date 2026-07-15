@@ -1,0 +1,81 @@
+/* ==========================================================================
+   PDS — Zigzag Partner Design System 토큰 (colors_and_type.css에서 발췌)
+   미니 브라우저 크롬 스타일 기반. Pretendard는 --font-sans 스택으로(설치 시 자동).
+   ========================================================================== */
+:root {
+  --black: #000000;
+  --white: #ffffff;
+
+  --gray-10:  #F9FAFA;
+  --gray-20:  #F6F7F7;
+  --gray-30:  #EFF0F0;
+  --gray-50:  #E2E5E6;
+  --gray-80:  #D0D4D6;
+  --gray-100: #C6CBCD;
+  --gray-150: #BDC2C5;
+  --gray-200: #B3BABD;
+  --gray-250: #AAB1B5;
+  --gray-300: #A1A9AD;
+  --gray-400: #878F91;
+  --gray-450: #80878A;
+  --gray-500: #707679;
+  --gray-550: #606567;
+  --gray-600: #505456;
+  --gray-700: #393B3D;
+  --gray-800: #292B2B;
+  --gray-900: #1F2020;
+  --gray-950: #181818;
+
+  --red-400: #FF3333;
+  --orange-400: #FF8C00;
+  --green-500: #23AE50;
+  --green-100: #F2FAF4;
+  --light-blue-600: #23A2F2;
+
+  --blue-50:  #F5F6FF;
+  --blue-200: #C8D2FD;
+  --blue-500: #4769F7;
+  --blue-600: #405EDE;
+
+  --purple-500: #7463F2;
+
+  --zigzag-pink-100: #FFEBF5;
+  --zigzag-pink-200: #FFC2E1;
+  --zigzag-pink-500: #FF349C;
+
+  /* Semantic */
+  --bg-base: var(--gray-30);
+  --bg-surface: var(--white);
+  --bg-scrim: rgba(0, 0, 0, 0.4);
+
+  --border-primary: var(--gray-50);
+  --border-secondary: var(--gray-80);
+
+  --content-primary: var(--gray-800);
+  --content-secondary: var(--gray-550);
+  --content-tertiary: var(--gray-400);
+  --content-quaternary: var(--gray-200);
+
+  --brand-primary: var(--zigzag-pink-500);
+  --brand-light: var(--zigzag-pink-100);
+
+  --accent-primary: var(--blue-500);
+  --accent-light: var(--blue-50);
+
+  --state-positive: var(--green-500);
+
+  /* Radius / Shadow */
+  --radius-small:  8px;
+  --radius-medium: 12px;
+  --radius-large:  16px;
+  --radius-full:   100px;
+
+  --shadow-low:    0 4px 16px rgba(0, 0, 0, 0.10);
+  --shadow-medium: 0 8px 24px rgba(0, 0, 0, 0.16);
+  --shadow-high:   0 12px 40px rgba(0, 0, 0, 0.20);
+
+  /* Typography */
+  --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto,
+               'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR',
+               'Malgun Gothic', sans-serif;
+}

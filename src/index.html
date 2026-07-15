@@ -1,7 +1,8 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
+    <link rel="stylesheet" href="pds.css" />
     <link rel="stylesheet" href="styles.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mobile Mini Browser</title>
@@ -9,6 +10,22 @@
   </head>
 
   <body>
+    <!-- SVG 아이콘 심볼 -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <defs>
+        <symbol id="ic-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></symbol>
+        <symbol id="ic-fwd" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></symbol>
+        <symbol id="ic-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></symbol>
+        <symbol id="ic-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+        <symbol id="ic-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></symbol>
+        <symbol id="ic-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></symbol>
+        <symbol id="ic-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+        <symbol id="ic-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.6a.55.55 0 0 1 1 0l2.3 4.66a.55.55 0 0 0 .42.3l5.14.75a.55.55 0 0 1 .3.94l-3.72 3.62a.55.55 0 0 0-.16.49l.88 5.12a.55.55 0 0 1-.8.58l-4.6-2.42a.55.55 0 0 0-.51 0l-4.6 2.42a.55.55 0 0 1-.8-.58l.88-5.12a.55.55 0 0 0-.16-.49L3.34 9.25a.55.55 0 0 1 .3-.94l5.14-.75a.55.55 0 0 0 .42-.3z"/></symbol>
+        <symbol id="ic-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></symbol>
+        <symbol id="ic-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+      </defs>
+    </svg>
+
     <!-- 로딩 스크린 (초기에만 표시) -->
     <div id="loading-screen" class="loading-screen">
       <div class="loading-content">
@@ -18,79 +35,156 @@
       </div>
     </div>
 
-    <!-- 상단 툴바 (상시 노출) -->
-    <div class="toolbar" id="toolbar">
-      <button id="nav-back" class="tb-btn" title="뒤로">←</button>
-      <button id="nav-forward" class="tb-btn" title="앞으로">→</button>
-      <button id="nav-reload" class="tb-btn" title="새로고침">⟳</button>
-      <button id="url-toggle" class="tb-btn" title="주소 입력">🔗</button>
-      <input id="toolbar-url" class="toolbar-url" type="url" placeholder="https://..." autocomplete="off" />
-      <span class="tb-spacer"></span>
-      <button id="aot-btn" class="tb-btn active" title="항상 위">📌</button>
-      <button id="new-window-btn" class="tb-btn" title="새 창">➕</button>
-      <button id="menu-toggle" class="tb-btn" title="설정">⚙️</button>
-    </div>
-
-    <!-- 분할 뷰 컨테이너 -->
-    <div class="split-container">
-      <!-- 좌측 컨트롤 패널 (슬라이드) -->
-      <div class="control-panel" id="control-panel">
-        <div class="panel-header">
-          <h2>WebView Controller</h2>
-          <button id="menu-close" class="menu-close">×</button>
+    <!-- 설정 패널 (슬라이드) -->
+    <div class="control-panel" id="control-panel">
+      <div class="panel-header">
+        <div class="panel-header-titles">
+          <span class="panel-title">웹뷰 설정</span>
+          <span class="panel-subtitle">WebView Controller</span>
         </div>
-
-        <div class="panel-content">
-          <div class="form-section">
-            <h3>URL Settings</h3>
-            <form id="webview-form">
-              <div class="default-url-info">
-                <span class="default-url-label">Start Default URL:</span>
-                <span id="default-url-display" class="default-url-value">Not set</span>
-              </div>      
-
-              <div class="input-group">
-                <input
-                  id="url-input"
-                  type="url"
-                  placeholder="https://example.com"
-                  required
-                />
-              </div>
-
-              <div class="device-section">
-                <h4>Device</h4>
-                <select id="device-select" class="device-select"></select>
-                <div class="custom-device">
-                  <input id="custom-name" type="text" placeholder="Name" />
-                  <input id="custom-width" type="number" placeholder="W" />
-                  <input id="custom-height" type="number" placeholder="H" />
-                </div>
-                <button type="button" id="add-preset-btn" class="secondary-btn">＋ Add preset</button>
-              </div>
-              <div class="default-url-section">
-                <button type="button" id="set-default-url-btn" class="secondary-btn">
-                  Set as Default URL
-                </button>
-                <button type="button" id="clear-default-url-btn" class="secondary-btn">
-                  Clear URL
-                </button>
-              </div>
-              <button type="submit">Navigate to URL</button>
-            </form>
-          </div>
-
-          <div class="quick-actions">
-            <h3>Quick Actions</h3>
-            <button id="default-url-btn">Load Default URL</button>
-          </div>
-
-        </div>
+        <button id="menu-close" class="ib" title="닫기"><svg width="18" height="18"><use href="#ic-x"/></svg></button>
       </div>
 
-      <!-- 우측 웹뷰 영역 (Tauri가 여기에 웹뷰를 삽입) -->
-      <div class="webview-container" id="webview-container">
-        <!-- Tauri webview will be rendered here -->
+      <div class="panel-content">
+        <!-- URL -->
+        <div class="panel-section">
+          <span class="section-label">URL</span>
+          <form id="webview-form" class="url-row">
+            <input id="url-input" type="url" placeholder="https://example.com" class="text-input" required />
+            <button type="submit" class="go-btn">이동</button>
+          </form>
+          <div class="default-url-info">
+            <span>시작 페이지 · <b id="default-url-display">Not set</b></span>
+            <span id="set-default-url-btn" class="link-btn">현재로 설정</span>
+          </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="panel-section">
+          <span class="section-label">빠른 실행</span>
+          <button type="button" id="default-url-btn" class="secondary-btn">시작 페이지로 가기</button>
+        </div>
+
+        <!-- Device -->
+        <div class="panel-section device-section">
+          <div class="section-head">
+            <span class="section-label">디바이스</span>
+            <span id="custom-toggle" class="link-btn">＋ 커스텀 추가</span>
+          </div>
+          <div id="device-grid" class="device-grid"></div>
+          <div id="custom-form" class="custom-form" hidden>
+            <span class="custom-form-title">커스텀 프리셋 추가</span>
+            <input id="custom-name" type="text" placeholder="이름 (예: 폴드 커버)" class="text-input" />
+            <div class="custom-form-row">
+              <input id="custom-width" type="number" placeholder="너비 W" class="text-input" />
+              <input id="custom-height" type="number" placeholder="높이 H" class="text-input" />
+            </div>
+            <div class="custom-form-row">
+              <span id="custom-cancel" class="secondary-btn">취소</span>
+              <span id="custom-save" class="primary-btn">추가</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Favorites -->
+        <div class="panel-section fav-section">
+          <div class="fav-head">
+            <span class="section-label">즐겨찾기</span>
+            <span class="new-badge">NEW</span>
+          </div>
+          <div id="fav-group-filter" class="chip-row"></div>
+          <div id="fav-grid" class="fav-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 웹뷰 영역 (Tauri가 여기에 웹뷰를 삽입) -->
+    <div class="webview-container" id="webview-container"></div>
+
+    <!-- 하단 크롬 (북마크 스트립 + 툴바) — 높이 실측 기준으로 웹뷰를 fit -->
+    <div class="chrome" id="chrome">
+      <!-- 즐겨찾기 북마크 스트립 (가로 스크롤) -->
+      <div class="bookmark-strip" id="bookmark-strip" hidden>
+        <div id="bookmark-list" class="bookmark-list"></div>
+        <div class="bookmark-divider"></div>
+        <button id="bookmark-add" class="ib bookmark-add" title="즐겨찾기 추가"><svg width="14" height="14"><use href="#ic-plus"/></svg></button>
+      </div>
+
+      <!-- 하단 툴바 (상시 노출) -->
+      <div class="toolbar" id="toolbar">
+        <button id="nav-back" class="ib tb-btn" title="뒤로"><svg width="19" height="19"><use href="#ic-back"/></svg></button>
+        <button id="nav-forward" class="ib tb-btn" title="앞으로"><svg width="19" height="19"><use href="#ic-fwd"/></svg></button>
+
+        <div class="url-bar" id="url-bar">
+          <svg class="url-lock" width="13" height="13"><use href="#ic-lock"/></svg>
+          <span id="url-display" class="url-text">새 탭</span>
+          <input id="toolbar-url" class="url-input" type="url" placeholder="주소 또는 검색어 입력" autocomplete="off" />
+          <button id="nav-reload" class="ib url-icon" title="새로고침"><svg id="reload-svg" width="16" height="16"><use href="#ic-refresh"/></svg></button>
+          <button id="url-submit" class="ib url-icon url-check" title="이동"><svg width="18" height="18"><use href="#ic-check"/></svg></button>
+        </div>
+
+        <button id="star-btn" class="ib tb-btn" title="즐겨찾기 바 표시/숨김"><svg width="19" height="19"><use href="#ic-star"/></svg></button>
+        <button id="aot-btn" class="ib tb-btn active" title="항상 위"><svg width="18" height="18"><use href="#ic-pin"/></svg></button>
+        <button id="new-window-btn" class="ib tb-btn" title="새 창"><svg width="19" height="19"><use href="#ic-plus"/></svg></button>
+        <button id="menu-toggle" class="ib tb-btn" title="설정"><svg width="18" height="18"><use href="#ic-gear"/></svg></button>
+      </div>
+    </div>
+
+    <!-- 즐겨찾기 추가 모달 (열릴 때 child webview hide → 메인 웹뷰가 풀 렌더) -->
+    <div class="fav-modal" id="fav-modal" hidden>
+      <div class="fav-modal-card">
+        <div class="fav-modal-head">
+          <span class="fav-modal-title">즐겨찾기 추가</span>
+          <button id="fav-modal-close" class="ib" title="닫기"><svg width="18" height="18"><use href="#ic-x"/></svg></button>
+        </div>
+        <div class="fav-field">
+          <label>사이트 이름</label>
+          <input id="fav-name" type="text" placeholder="예: 지그재그" class="text-input" />
+        </div>
+        <div class="fav-field">
+          <label>URL</label>
+          <input id="fav-url" type="url" placeholder="https://" class="text-input" />
+        </div>
+        <div class="fav-field">
+          <label>그룹</label>
+          <div id="fav-group-chips" class="chip-row"></div>
+          <div id="fav-new-group-row" class="new-group-row" hidden>
+            <input id="fav-new-group" type="text" placeholder="새 그룹 이름 (예: 경쟁사)" class="text-input" />
+            <button id="fav-new-group-add" type="button" class="primary-btn new-group-add">추가</button>
+          </div>
+        </div>
+        <div class="fav-field">
+          <label>메모 <span class="opt">(선택)</span></label>
+          <input id="fav-memo" type="text" placeholder="예: 가격 비교용" class="text-input" />
+        </div>
+        <div class="fav-modal-actions">
+          <button id="fav-cancel" class="secondary-btn">취소</button>
+          <button id="fav-save" class="primary-btn fav-save">저장</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 토스트 (하단 크롬 밴드 — 네이티브 웹뷰 위엔 못 띄우므로 툴바 영역에 표시) -->
+    <div class="toast" id="toast" hidden></div>
+
+    <!-- 콘텐츠 로딩 오버레이 (네비 중 이전 페이지 대신 로딩 표시) -->
+    <div class="nav-loading" id="nav-loading" hidden>
+      <div class="nav-loading-box">
+        <div class="spinner"></div>
+        <div class="nav-loading-text">불러오는 중…</div>
+      </div>
+    </div>
+
+    <!-- 콘텐츠 로드 실패 오버레이 (child webview hide 후 표시, z-index를 크롬 아래로 둬 툴바 유지) -->
+    <div class="load-error" id="load-error" hidden>
+      <div class="load-error-box">
+        <svg class="load-error-icon" width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        <div class="load-error-title">페이지를 불러올 수 없습니다</div>
+        <div class="load-error-desc">주소가 올바른지 확인하거나 네트워크 상태를 점검해 주세요.</div>
+        <div class="load-error-url" id="load-error-url"></div>
+        <div class="load-error-actions">
+          <button id="load-error-retry" class="primary-btn">다시 시도</button>
+        </div>
       </div>
     </div>
   </body>
