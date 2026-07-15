@@ -3,6 +3,11 @@
 Tauri 기반의 **반응형 웹 프리뷰용 모바일 미니 브라우저**입니다.
 반응형으로 개발된 웹 페이지를 여러 디바이스 크기로, 항상 위에 띄워두고, 여러 개를 나란히 비교하며 확인하는 개발/QA 도구입니다.
 이 도구는 순수하게 Claude Code를 사용해서 개발되었습니다. (저는 Rust도 Tauri도 몰라요..)
+<img width="374" height="711" alt="스크린샷 2026-07-15 오후 12 38 12" src="https://github.com/user-attachments/assets/0917eb50-fd47-47c8-a381-04645174939f" />
+<img width="374" height="756" alt="스크린샷 2026-07-15 오후 12 38 48" src="https://github.com/user-attachments/assets/07afd0d8-9034-4350-8c6f-fee45327c253" />
+<br />
+<img width="737" height="756" alt="스크린샷 2026-07-15 오후 12 39 00" src="https://github.com/user-attachments/assets/a5b88011-d843-4ab7-8d90-66b81e1ae746" />
+
 
 ## 주요 기능
 
