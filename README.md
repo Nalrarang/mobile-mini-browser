@@ -1,3 +1,5 @@
+<img width="256" height="256" alt="app_icon" src="https://github.com/user-attachments/assets/ba798183-68c9-4660-942b-20a8bd00035c" />
+
 # Mobile Mini Browser
 
 Tauri 기반의 **반응형 웹 프리뷰용 모바일 미니 브라우저**입니다.
